@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2022",
+    "outDir": "out",
+    "rootDir": "src",
+    "lib": ["ES2022"],
+    "sourceMap": true,
+    "strict": true,                         // Modo estricto activado
+    "noImplicitAny": true,                  // Evita tipados ambiguos
+    "strictNullChecks": true,               // Control riguroso de null/undefined
+    "noUnusedLocals": true,                 // Limpieza de código muerto
+    "noUnusedParameters": true
+  },
+  "include": ["src/**/*"]
+}

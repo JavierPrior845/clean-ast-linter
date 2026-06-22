@@ -1,0 +1,49 @@
+{
+  "name": "clean-ast-linter",
+  "displayName": "Clean AST Linter",
+  "description": "Deterministic local static analysis using Tree-sitter AST",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "clean-ast-linter.helloWorld",
+        "title": "Hello World"
+      }
+    ],
+    "configuration": {
+      "title": "Clean AST Linter",
+      "properties": {
+        "cleanAstLinter.maxFunctionLines": {
+          "type": "number",
+          "default": 50,
+          "description": "Maximum allowed lines for a single function."
+        },
+        "cleanAstLinter.maxParameters": {
+          "type": "number",
+          "default": 4,
+          "description": "Maximum allowed parameters in a function signature."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "@types/vscode": "^1.125.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "web-tree-sitter": "^0.26.9"
+  }
+}
