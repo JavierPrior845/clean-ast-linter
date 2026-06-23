@@ -36,11 +36,22 @@
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "formatter": "prettier --write src",
+    "knip": "knip",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
     "@types/vscode": "^1.125.0",
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.61.1",
+    "eslint": "^8.57.1",
+    "husky": "^9.1.7",
+    "knip": "^6.17.2",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.4",
     "typescript": "^6.0.3"
   },
   "dependencies": {
