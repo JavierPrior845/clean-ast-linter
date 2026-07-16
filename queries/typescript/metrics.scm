@@ -25,3 +25,22 @@
   (method_signature
     parameters: (formal_parameters) @function.params)
 ] @function.def
+
+;; Puntos de decisión para Complejidad Ciclomática
+[
+  (if_statement)
+  (for_statement)
+  (for_in_statement)
+  (for_of_statement)
+  (while_statement)
+  (do_statement)
+  (catch_clause)
+  (switch_case)
+  (ternary_expression)
+  (binary_expression
+    operator: [
+      "&&"
+      "||"
+      "??"
+    ])
+] @decision.point
