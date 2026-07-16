@@ -1,6 +1,6 @@
 import type { Node as SyntaxNode } from 'web-tree-sitter';
 
-export interface Position {
+interface Position {
     row: number;
     column: number;
 }
