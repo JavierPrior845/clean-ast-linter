@@ -27,6 +27,13 @@ function registerDocumentEventListeners(context: vscode.ExtensionContext, analyz
             analyzer.analyzeDocument(document);
         }),
     );
+
+    // Limpiar árbol WASM cuando se cierra el documento
+    context.subscriptions.push(
+        vscode.workspace.onDidCloseTextDocument((document) => {
+            analyzer.clearTree(document);
+        }),
+    );
 }
 
 function registerCommands(context: vscode.ExtensionContext) {

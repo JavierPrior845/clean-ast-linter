@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { Language, Query, QueryCapture, Node as SyntaxNode } from 'web-tree-sitter';
+import type { Language, Query, QueryCapture, Node as SyntaxNode, Tree } from 'web-tree-sitter';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Parser = require('web-tree-sitter');
 import * as path from 'path';
@@ -23,6 +23,7 @@ export class ASTAnalyzer {
 
     private debounceTimer: NodeJS.Timeout | null = null;
     private extensionContext: vscode.ExtensionContext;
+    private previousTrees: Map<string, Tree> = new Map();
 
     constructor(context: vscode.ExtensionContext) {
         this.extensionContext = context;
@@ -115,9 +116,27 @@ export class ASTAnalyzer {
         return !!(this.parser && this.query && this.complexityMetric);
     }
 
+    public clearTree(document: vscode.TextDocument) {
+        const uriString = document.uri.toString();
+        const tree = this.previousTrees.get(uriString);
+        if (tree) {
+            tree.delete();
+            this.previousTrees.delete(uriString);
+        }
+    }
+
     private getCapturesFromDocument(document: vscode.TextDocument) {
         const sourceCode = document.getText();
+        const uriString = document.uri.toString();
+
+        const previousTree = this.previousTrees.get(uriString);
+        if (previousTree) {
+            previousTree.delete();
+        }
+
         const tree = this.parser.parse(sourceCode);
+        this.previousTrees.set(uriString, tree);
+
         return this.query!.captures(tree.rootNode);
     }
 
