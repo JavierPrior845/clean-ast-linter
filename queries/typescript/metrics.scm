@@ -9,8 +9,6 @@
   (function_declaration
     parameters: (formal_parameters) @function.params)
   
-  (function
-    parameters: (formal_parameters) @function.params)
 
   ;; Funciones flecha:
   ;; const foo = (a, b) => {}
@@ -31,7 +29,6 @@
   (if_statement)
   (for_statement)
   (for_in_statement)
-  (for_of_statement)
   (while_statement)
   (do_statement)
   (catch_clause)

@@ -9,7 +9,10 @@
   "categories": [
     "Linters"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -30,6 +33,11 @@
           "type": "number",
           "default": 4,
           "description": "Maximum allowed parameters in a function signature."
+        },
+        "cleanAstLinter.maxComplexity": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum allowed cyclomatic complexity for a function."
         }
       }
     }

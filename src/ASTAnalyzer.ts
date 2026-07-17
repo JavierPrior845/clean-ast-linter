@@ -1,7 +1,13 @@
 import * as vscode from 'vscode';
-import type { Language, Query, QueryCapture, Node as SyntaxNode, Tree } from 'web-tree-sitter';
+import type {
+    Language as SyntaxLanguage,
+    Query as SyntaxQuery,
+    QueryCapture,
+    Node as SyntaxNode,
+    Tree,
+} from 'web-tree-sitter';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const Parser = require('web-tree-sitter');
+const { Parser, Language, Query } = require('web-tree-sitter');
 import * as path from 'path';
 import * as fs from 'fs';
 import { LengthMetric } from './metrics/LengthMetric';
@@ -13,8 +19,8 @@ export class ASTAnalyzer {
     private diagnosticCollection: vscode.DiagnosticCollection;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private parser: any | null = null;
-    private language: Language | null = null;
-    private query: Query | null = null;
+    private language: SyntaxLanguage | null = null;
+    private query: SyntaxQuery | null = null;
 
     // Métricas
     private lengthMetric = new LengthMetric();
@@ -47,7 +53,7 @@ export class ASTAnalyzer {
                 return;
             }
 
-            this.language = await Parser.Language.load(wasmPath);
+            this.language = await Language.load(wasmPath);
             this.parser.setLanguage(this.language);
 
             this.loadQueries();
@@ -57,7 +63,11 @@ export class ASTAnalyzer {
     }
 
     private getWasmPath(): string {
-        return path.join(this.extensionContext.extensionPath, 'tree-sitter-typescript.wasm');
+        return path.join(
+            this.extensionContext.extensionPath,
+            'grammars',
+            'tree-sitter-typescript.wasm',
+        );
     }
 
     private loadQueries() {
@@ -69,7 +79,7 @@ export class ASTAnalyzer {
         );
         const querySource = fs.readFileSync(queryPath, 'utf8');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.query = (this.language as any).query(querySource);
+        this.query = new Query(this.language, querySource);
 
         if (this.query) {
             this.complexityMetric = new CyclomaticComplexityMetric(this.query);
@@ -163,6 +173,9 @@ export class ASTAnalyzer {
             }
         }
 
+        console.log(
+            `Clean AST Linter: Evaluated ${captures.length} captures, generated ${diagnostics.length} diagnostics.`,
+        );
         return diagnostics;
     }
 
