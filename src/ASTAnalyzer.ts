@@ -15,17 +15,28 @@ import { ParameterMetric } from './metrics/ParameterMetric';
 import { CyclomaticComplexityMetric } from './metrics/CyclomaticComplexityMetric';
 import { MetricViolation } from './metrics/IMetric';
 
+interface LanguageConfig {
+    wasmFile: string;
+    queryFolder: string;
+}
+
+const SUPPORTED_LANGUAGES: Record<string, LanguageConfig> = {
+    typescript: { wasmFile: 'tree-sitter-typescript.wasm', queryFolder: 'typescript' },
+    typescriptreact: { wasmFile: 'tree-sitter-typescript.wasm', queryFolder: 'typescript' },
+    python: { wasmFile: 'tree-sitter-python.wasm', queryFolder: 'python' },
+};
+
 export class ASTAnalyzer {
     private diagnosticCollection: vscode.DiagnosticCollection;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private parser: any | null = null;
-    private language: SyntaxLanguage | null = null;
-    private query: SyntaxQuery | null = null;
+    private languages = new Map<string, SyntaxLanguage>();
+    private queries = new Map<string, SyntaxQuery>();
 
     // Métricas
     private lengthMetric = new LengthMetric();
     private parameterMetric = new ParameterMetric();
-    private complexityMetric: CyclomaticComplexityMetric | null = null;
+    private complexityMetrics = new Map<string, CyclomaticComplexityMetric>();
 
     private debounceTimer: NodeJS.Timeout | null = null;
     private extensionContext: vscode.ExtensionContext;
@@ -46,44 +57,55 @@ export class ASTAnalyzer {
         try {
             await Parser.init();
             this.parser = new Parser();
+        } catch (e) {
+            console.error('Error inicializando Tree-sitter:', e);
+        }
+    }
 
-            const wasmPath = this.getWasmPath();
+    private async loadLanguageResources(languageId: string): Promise<boolean> {
+        if (this.languages.has(languageId)) {
+            return true;
+        }
+
+        const config = SUPPORTED_LANGUAGES[languageId];
+        if (!config) {
+            return false;
+        }
+
+        try {
+            const wasmPath = path.join(
+                this.extensionContext.extensionPath,
+                'grammars',
+                config.wasmFile,
+            );
             if (!fs.existsSync(wasmPath)) {
                 console.warn(`No se encontró el binario Wasm en: ${wasmPath}`);
-                return;
+                return false;
             }
 
-            this.language = await Language.load(wasmPath);
-            this.parser.setLanguage(this.language);
+            const language = await Language.load(wasmPath);
+            this.languages.set(languageId, language);
 
-            this.loadQueries();
+            this.loadQueryForLanguage(languageId, language, config.queryFolder);
+
+            return true;
         } catch (e) {
-            console.error('Error inicializando Tree-sitter o cargando recursos:', e);
+            console.error(`Error cargando recursos para ${languageId}:`, e);
+            return false;
         }
     }
 
-    private getWasmPath(): string {
-        return path.join(
-            this.extensionContext.extensionPath,
-            'grammars',
-            'tree-sitter-typescript.wasm',
-        );
-    }
-
-    private loadQueries() {
-        const queryPath = path.join(
-            this.extensionContext.extensionPath,
-            'queries',
-            'typescript',
-            'metrics.scm',
-        );
+    private loadQueryForLanguage(
+        languageId: string,
+        language: SyntaxLanguage,
+        queryFolder: string,
+    ) {
+        const queryFile = path.join('queries', queryFolder, 'metrics.scm');
+        const queryPath = path.join(this.extensionContext.extensionPath, queryFile);
         const querySource = fs.readFileSync(queryPath, 'utf8');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.query = new Query(this.language, querySource);
-
-        if (this.query) {
-            this.complexityMetric = new CyclomaticComplexityMetric(this.query);
-        }
+        const query = new Query(language, querySource);
+        this.queries.set(languageId, query);
+        this.complexityMetrics.set(languageId, new CyclomaticComplexityMetric(query));
     }
 
     public analyzeDocument(document: vscode.TextDocument) {
@@ -95,35 +117,32 @@ export class ASTAnalyzer {
             clearTimeout(this.debounceTimer);
         }
 
-        this.debounceTimer = setTimeout(() => {
-            this.run(document);
-        }, 400);
+        this.run(document);
     }
 
     private isSupportedLanguage(document: vscode.TextDocument): boolean {
-        return document.languageId === 'typescript' || document.languageId === 'typescriptreact';
+        return !!SUPPORTED_LANGUAGES[document.languageId];
     }
 
     private run(document: vscode.TextDocument) {
-        this.clearDiagnostics(document);
+        this.debounceTimer = setTimeout(async () => {
+            this.clearDiagnostics(document);
+            const success = await this.loadLanguageResources(document.languageId);
+            if (!success || !this.parser) {
+                return;
+            }
 
-        if (!this.isReady()) {
-            return; // Aún no inicializado o fallo en Wasm
-        }
-
-        const captures = this.getCapturesFromDocument(document);
-        const config = this.getLinterConfiguration();
-        const diagnostics = this.evaluateCaptures(captures, config);
-
-        this.diagnosticCollection.set(document.uri, diagnostics);
+            const captures = this.getCapturesFromDocument(document);
+            if (captures) {
+                const config = this.getLinterConfiguration();
+                const diagnostics = this.evaluateCaptures(captures, config, document.languageId);
+                this.diagnosticCollection.set(document.uri, diagnostics);
+            }
+        }, 400);
     }
 
     private clearDiagnostics(document: vscode.TextDocument) {
         this.diagnosticCollection.set(document.uri, []);
-    }
-
-    private isReady(): boolean {
-        return !!(this.parser && this.query && this.complexityMetric);
     }
 
     public clearTree(document: vscode.TextDocument) {
@@ -135,7 +154,15 @@ export class ASTAnalyzer {
         }
     }
 
-    private getCapturesFromDocument(document: vscode.TextDocument) {
+    private getCapturesFromDocument(document: vscode.TextDocument): QueryCapture[] | null {
+        const languageId = document.languageId;
+        const language = this.languages.get(languageId);
+        const query = this.queries.get(languageId);
+
+        if (!language || !query || !this.parser) return null;
+
+        this.parser.setLanguage(language);
+
         const sourceCode = document.getText();
         const uriString = document.uri.toString();
 
@@ -147,7 +174,7 @@ export class ASTAnalyzer {
         const tree = this.parser.parse(sourceCode);
         this.previousTrees.set(uriString, tree);
 
-        return this.query!.captures(tree.rootNode);
+        return query.captures(tree.rootNode);
     }
 
     private getLinterConfiguration() {
@@ -162,12 +189,13 @@ export class ASTAnalyzer {
     private evaluateCaptures(
         captures: QueryCapture[],
         config: { maxLines: number; maxParams: number; maxComplexity: number },
+        languageId: string,
     ): vscode.Diagnostic[] {
         const diagnostics: vscode.Diagnostic[] = [];
 
         for (const capture of captures) {
             if (capture.name === 'function.def') {
-                this.evaluateFunctionDefinition(capture.node, config, diagnostics);
+                this.evaluateFunctionDefinition(capture.node, config, diagnostics, languageId);
             } else if (capture.name === 'function.params') {
                 this.evaluateFunctionParameters(capture.node, config, diagnostics);
             }
@@ -183,18 +211,15 @@ export class ASTAnalyzer {
         node: SyntaxNode,
         config: { maxLines: number; maxParams: number; maxComplexity: number },
         diagnostics: vscode.Diagnostic[],
+        languageId: string,
     ) {
-        const lengthViolation = this.lengthMetric.evaluate(node, config.maxLines);
-        if (lengthViolation) {
-            diagnostics.push(
-                this.createDiagnostic(lengthViolation, vscode.DiagnosticSeverity.Warning),
-            );
-        }
+        this.addViolationIfAny(diagnostics, this.lengthMetric.evaluate(node, config.maxLines));
 
-        const complexityViolation = this.complexityMetric!.evaluate(node, config.maxComplexity);
-        if (complexityViolation) {
-            diagnostics.push(
-                this.createDiagnostic(complexityViolation, vscode.DiagnosticSeverity.Warning),
+        const complexityMetric = this.complexityMetrics.get(languageId);
+        if (complexityMetric) {
+            this.addViolationIfAny(
+                diagnostics,
+                complexityMetric.evaluate(node, config.maxComplexity),
             );
         }
     }
@@ -204,11 +229,12 @@ export class ASTAnalyzer {
         config: { maxParams: number },
         diagnostics: vscode.Diagnostic[],
     ) {
-        const paramsViolation = this.parameterMetric.evaluate(node, config.maxParams);
-        if (paramsViolation) {
-            diagnostics.push(
-                this.createDiagnostic(paramsViolation, vscode.DiagnosticSeverity.Warning),
-            );
+        this.addViolationIfAny(diagnostics, this.parameterMetric.evaluate(node, config.maxParams));
+    }
+
+    private addViolationIfAny(diagnostics: vscode.Diagnostic[], violation: MetricViolation | null) {
+        if (violation) {
+            diagnostics.push(this.createDiagnostic(violation, vscode.DiagnosticSeverity.Warning));
         }
     }
 
