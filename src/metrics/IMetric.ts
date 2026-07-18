@@ -1,4 +1,4 @@
-import type { Node as SyntaxNode } from 'web-tree-sitter';
+import type { Node as SyntaxNode, QueryCapture } from 'web-tree-sitter';
 
 interface Position {
     row: number;
@@ -12,5 +12,9 @@ export interface MetricViolation {
 }
 
 export interface IMetric {
-    evaluate(node: SyntaxNode, threshold: number): MetricViolation | null;
+    evaluate(
+        node: SyntaxNode,
+        threshold: number,
+        captures?: QueryCapture[],
+    ): MetricViolation | null;
 }

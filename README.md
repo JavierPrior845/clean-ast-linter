@@ -30,6 +30,8 @@ Users can customize the thresholds natively within their VS Code `settings.json`
 
 ## Architecture
 This is a 100% offline extension executing on the VS Code Extension Host using `web-tree-sitter` (WebAssembly). It features:
+* **Single-Pass Query Optimization**: Eliminates O(N^2) WASM evaluation bottlenecks by running S-expression queries only once per file and filtering coordinate ranges natively in JavaScript memory.
+* **Per-Document Debouncing**: Uses a Map of timers to ensure isolated debouncing without race conditions, even when multiple files or background panels are actively updated.
 * **Dynamic Language Switching**: Caches WebAssembly tree-sitter instances per language to minimize RAM overhead.
 * **WASM Memory Management**: Safely cleans up the C emulator memory bounds using internal garbage collection to prevent memory leaks in VS Code.
-* **Debounced Listeners**: Achieves near-zero CPU overhead during active typing by debouncing the AST traversal.
+* **Non-Blocking Listeners**: Achieves near-zero CPU overhead during active typing by debouncing the AST traversal synchronously.
