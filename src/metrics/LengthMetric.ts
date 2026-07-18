@@ -1,5 +1,5 @@
 import type { Node as SyntaxNode } from 'web-tree-sitter';
-import { IMetric, MetricViolation } from './IMetric';
+import { IMetric, MetricViolation, createViolation } from './IMetric';
 
 export class LengthMetric implements IMetric {
     /**
@@ -14,17 +14,10 @@ export class LengthMetric implements IMetric {
         const lines = endRow - startRow;
 
         if (lines > threshold) {
-            return {
-                message: `La función es demasiado larga. Tiene ${lines} líneas, pero el límite es de ${threshold}.`,
-                startPosition: {
-                    row: node.startPosition.row,
-                    column: node.startPosition.column,
-                },
-                endPosition: {
-                    row: node.endPosition.row,
-                    column: node.endPosition.column,
-                },
-            };
+            return createViolation(
+                node,
+                `La función es demasiado larga. Tiene ${lines} líneas, pero el límite es de ${threshold}.`,
+            );
         }
 
         return null;

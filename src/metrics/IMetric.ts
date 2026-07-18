@@ -18,3 +18,17 @@ export interface IMetric {
         captures?: QueryCapture[],
     ): MetricViolation | null;
 }
+
+export function createViolation(node: SyntaxNode, message: string): MetricViolation {
+    return {
+        message,
+        startPosition: {
+            row: node.startPosition.row,
+            column: node.startPosition.column,
+        },
+        endPosition: {
+            row: node.endPosition.row,
+            column: node.endPosition.column,
+        },
+    };
+}

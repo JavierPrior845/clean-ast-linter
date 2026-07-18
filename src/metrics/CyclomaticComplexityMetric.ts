@@ -1,5 +1,5 @@
 import type { Node as SyntaxNode, QueryCapture } from 'web-tree-sitter';
-import { IMetric, MetricViolation } from './IMetric';
+import { IMetric, MetricViolation, createViolation } from './IMetric';
 
 export class CyclomaticComplexityMetric implements IMetric {
     /**
@@ -26,17 +26,10 @@ export class CyclomaticComplexityMetric implements IMetric {
         const complexity = decisionPoints.length + 1;
 
         if (complexity > threshold) {
-            return {
-                message: `La función tiene una complejidad ciclomática de ${complexity}, superando el límite de ${threshold}. Considera refactorizar para simplificar la lógica.`,
-                startPosition: {
-                    row: node.startPosition.row,
-                    column: node.startPosition.column,
-                },
-                endPosition: {
-                    row: node.endPosition.row,
-                    column: node.endPosition.column,
-                },
-            };
+            return createViolation(
+                node,
+                `La función tiene una complejidad ciclomática de ${complexity}, superando el límite de ${threshold}. Considera refactorizar para simplificar la lógica.`,
+            );
         }
 
         return null;

@@ -1,5 +1,5 @@
 import type { Node as SyntaxNode } from 'web-tree-sitter';
-import { IMetric, MetricViolation } from './IMetric';
+import { IMetric, MetricViolation, createViolation } from './IMetric';
 
 export class ParameterMetric implements IMetric {
     /**
@@ -14,17 +14,10 @@ export class ParameterMetric implements IMetric {
         const parameterCount = node.namedChildCount;
 
         if (parameterCount > threshold) {
-            return {
-                message: `La función tiene demasiados parámetros (${parameterCount}). El máximo permitido es ${threshold}. Considera agruparlos en un objeto o interfaz de configuración.`,
-                startPosition: {
-                    row: node.startPosition.row,
-                    column: node.startPosition.column,
-                },
-                endPosition: {
-                    row: node.endPosition.row,
-                    column: node.endPosition.column,
-                },
-            };
+            return createViolation(
+                node,
+                `La función tiene demasiados parámetros (${parameterCount}). El límite recomendado es ${threshold}.`,
+            );
         }
 
         return null;
