@@ -20,6 +20,10 @@
       {
         "command": "clean-ast-linter.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "clean-ast-linter.refactorWithAI",
+        "title": "Refactor with Local AI (Ollama)"
       }
     ],
     "configuration": {
@@ -39,6 +43,16 @@
           "type": "number",
           "default": 10,
           "description": "Maximum allowed cyclomatic complexity for a function."
+        },
+        "cleanAstLinter.aiEndpoint": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Local Ollama API endpoint."
+        },
+        "cleanAstLinter.aiModel": {
+          "type": "string",
+          "default": "qwen2.5-coder:1.5b",
+          "description": "Ollama model to use for refactoring."
         }
       }
     }
