@@ -94,3 +94,33 @@ Puedes filtrar todavía más los resultados de las capturas usando predicados de
 )
 ```
 *Explicación:* Captura todos los identificadores que se llamen exactamente "i".
+
+### Métricas en AST (AST Metrics)
+
+En el contexto del análisis estático de código mediante AST, las **métricas** son valores cuantitativos que extraemos de los nodos capturados (por ejemplo, a través de *queries* de Tree-sitter) para evaluar la calidad del código y detectar posibles "malas prácticas" (code smells).
+
+Al utilizar S-Expressions para separar e identificar componentes clave como `@function.def` (la declaración completa) y `@function.params` (la lista de parámetros), podemos calcular principalmente dos métricas fundamentales:
+
+1. **Tamaño de la Función (Function Length):**
+   - Utilizando las propiedades del nodo capturado como `@function.def` (`startPosition.row` y `endPosition.row`), el linter calcula cuántas líneas ocupa la función.
+   - Si supera un límite predefinido (por ejemplo, más de 30 líneas), se considera demasiado larga e incumple el principio de responsabilidad única.
+
+2. **Exceso de Parámetros (Parameter Count):**
+   - Utilizando el nodo capturado como `@function.params`, se cuenta directamente el número de hijos correspondientes a parámetros.
+   - Si hay demasiados (por ejemplo, más de 3 o 4), el linter recomendará agruparlos en un objeto o interfaz (Data Transfer Object / Configuration Object).
+
+Estas capturas son la base sobre la cual el código de la extensión (en TypeScript) toma decisiones para emitir advertencias (*warnings*) directamente en el editor del usuario.
+
+---
+
+### Integración de AST con Inteligencia Artificial (Code Actions)
+
+El uso de Tree-sitter no solo permite detectar problemas, sino que habilita soluciones quirúrgicas automatizadas mediante modelos de lenguaje (LLM). El flujo arquitectónico es el siguiente:
+
+1. **Detección Determinista:** El analizador AST (Tree-sitter) determina con 100% de fiabilidad matemática dónde empieza y dónde acaba una función infractora (usando `startPosition` y `endPosition`).
+2. **Code Action Provider:** La extensión registra un proveedor de "Quick Fixes" (bombilla amarilla en VS Code). Cuando el cursor del usuario coincide con las coordenadas exactas de la función defectuosa, el proveedor se activa.
+3. **Extracción Quirúrgica:** Gracias a que Tree-sitter conoce los límites exactos del nodo `@function.def`, la extensión extrae **únicamente** ese bloque de texto del documento completo.
+4. **Refactorización Aislada (LLM):** Ese bloque específico se envía a un agente de IA local (por ejemplo, mediante Ollama). Como la IA recibe un contexto reducido y específico (solo la función, no todo el archivo), su respuesta es mucho más rápida y menos propensa a alucinaciones.
+5. **Reemplazo Seguro:** La extensión recoge la respuesta de la IA (el código limpio) y utiliza un `WorkspaceEdit` para sobrescribir exactamente el rango de coordenadas original detectado por Tree-sitter. 
+
+Esta sinergia garantiza que la IA no corrompa otras partes del archivo por error (un problema común en herramientas genéricas de autocompletado), ya que **el AST actúa como una barrera o delimitador estricto** de la zona de actuación.

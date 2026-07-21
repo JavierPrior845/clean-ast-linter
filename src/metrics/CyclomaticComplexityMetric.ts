@@ -28,7 +28,7 @@ export class CyclomaticComplexityMetric implements IMetric {
         if (complexity > threshold) {
             return createViolation(
                 node,
-                `La función tiene una complejidad ciclomática de ${complexity}, superando el límite de ${threshold}. Considera refactorizar para simplificar la lógica.`,
+                `Function has a cyclomatic complexity of ${complexity}, exceeding the limit of ${threshold}. Consider refactoring to simplify the logic.`,
             );
         }
 
