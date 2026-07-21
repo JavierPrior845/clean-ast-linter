@@ -16,7 +16,7 @@ export class ParameterMetric implements IMetric {
         if (parameterCount > threshold) {
             return createViolation(
                 node,
-                `La función tiene demasiados parámetros (${parameterCount}). El límite recomendado es ${threshold}.`,
+                `Function has too many parameters (${parameterCount}). The maximum allowed is ${threshold}.`,
             );
         }
 

@@ -32,7 +32,7 @@ export class RefactorCodeActionProvider implements vscode.CodeActionProvider {
         diagnostic: vscode.Diagnostic,
     ): vscode.CodeAction {
         const action = new vscode.CodeAction(
-            '💡 Refactorizar con IA (Ollama)',
+            '💡 Refactor with AI (Ollama)',
             vscode.CodeActionKind.QuickFix,
         );
 

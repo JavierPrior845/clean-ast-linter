@@ -59,7 +59,7 @@ function registerCommands(context: vscode.ExtensionContext) {
             vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
-                    title: 'Refactorizando con IA Local...',
+                    title: 'Refactoring with Local AI...',
                     cancellable: false,
                 },
                 async () => {
@@ -75,11 +75,11 @@ function registerCommands(context: vscode.ExtensionContext) {
                         const success = await vscode.workspace.applyEdit(edit);
 
                         if (success) {
-                            vscode.window.showInformationMessage('¡Refactorización completada!');
-                        } else {
-                            vscode.window.showErrorMessage(
-                                'No se pudo aplicar la refactorización.',
+                            vscode.window.showInformationMessage(
+                                'Refactoring completed successfully!',
                             );
+                        } else {
+                            vscode.window.showErrorMessage('Failed to apply refactoring.');
                         }
                     } catch (error: unknown) {
                         vscode.window.showErrorMessage(

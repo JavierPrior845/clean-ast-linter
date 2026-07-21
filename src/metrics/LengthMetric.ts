@@ -16,7 +16,7 @@ export class LengthMetric implements IMetric {
         if (lines > threshold) {
             return createViolation(
                 node,
-                `La función es demasiado larga. Tiene ${lines} líneas, pero el límite es de ${threshold}.`,
+                `Function is too long (${lines} lines). The maximum allowed is ${threshold}.`,
             );
         }
 
